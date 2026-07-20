@@ -380,14 +380,21 @@ addBtn.onclick = async () => {
   if (!pickStart || !pickEnd) return;
   addBtn.disabled = true;
   addBtn.textContent = "Ajout en cours...";
-  await addLeaveRemote(formPerson, pickStart, pickEnd);
-  await loadLeaves();
-  pickStart = null; pickEnd = null;
-  addBtn.textContent = "Ajouter";
-  document.getElementById("mini-hint").textContent = "Cliquez un jour de début puis un jour de fin.";
-  renderMini();
-  renderPlist();
-  renderCalendar();
+  try {
+    await addLeaveRemote(formPerson, pickStart, pickEnd);
+    await loadLeaves();
+    pickStart = null; pickEnd = null;
+    document.getElementById("mini-hint").textContent = "Cliquez un jour de début puis un jour de fin.";
+    renderMini();
+    renderPlist();
+    renderCalendar();
+  } catch (e) {
+    console.error("Erreur d'ajout", e);
+    document.getElementById("mini-hint").textContent = "Erreur d'envoi, réessayez.";
+  } finally {
+    addBtn.textContent = "Ajouter";
+    addBtn.disabled = false;
+  }
 };
 
 function renderPlist() {
@@ -408,10 +415,14 @@ function renderPlist() {
         <button aria-label="Supprimer">✕</button>
       `;
       row.querySelector("button").onclick = async () => {
-        await deleteLeaveRemote(l.id);
-        await loadLeaves();
-        renderPlist();
-        renderCalendar();
+        try {
+          await deleteLeaveRemote(l.id);
+          await loadLeaves();
+          renderPlist();
+          renderCalendar();
+        } catch (e) {
+          console.error("Erreur de suppression", e);
+        }
       };
       plistEl.appendChild(row);
     });
@@ -445,12 +456,14 @@ async function loadLeaves() {
 async function addLeaveRemote(person, start, end) {
   await fetch(APPS_SCRIPT_URL, {
     method: "POST",
+    mode: "no-cors",
     body: JSON.stringify({ action: "add", person, start, end })
   });
 }
 async function deleteLeaveRemote(id) {
   await fetch(APPS_SCRIPT_URL, {
     method: "POST",
+    mode: "no-cors",
     body: JSON.stringify({ action: "delete", id })
   });
 }
