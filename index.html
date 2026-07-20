@@ -65,9 +65,16 @@
   .cal-header button {
     background: #fff; border: 1px solid var(--line); border-radius: 10px;
     width: 32px; height: 32px; cursor: pointer; font-size: 15px; color: var(--blue);
+    flex-shrink: 0;
   }
   .cal-header button:hover { border-color: var(--blue); }
+  .cal-title-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .cal-title { font-weight: 700; font-size: 15px; }
+  .today-link {
+    background: none; border: none; padding: 0; width: auto; height: auto;
+    font-size: 11px; font-weight: 600; color: var(--blue); cursor: pointer;
+  }
+  .today-link:hover { text-decoration: underline; }
 
   .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
   .dow { text-align: center; font-size: 11px; color: var(--text-sec); padding-bottom: 6px; font-weight: 600; }
@@ -158,13 +165,6 @@
   .step-block { margin-bottom: 22px; }
   .step-block:last-of-type { margin-bottom: 0; }
 
-  .today-btn {
-    background: #fff; border: 1px solid var(--line); border-radius: 8px;
-    padding: 5px 10px; font-size: 11px; font-weight: 600; color: var(--text-sec);
-    cursor: pointer; margin-left: 8px;
-  }
-  .today-btn:hover { border-color: var(--blue); color: var(--blue); }
-  .cal-title-row { display: flex; align-items: center; }
 
   .empty-hint {
     text-align: center; padding: 30px 10px; color: var(--text-sec); font-size: 13px;
@@ -203,14 +203,12 @@
     <div class="filters" id="filters"></div>
 
     <div class="cal-header">
-      <div class="cal-title-row">
-        <button id="prev">‹</button>
+      <button id="prev">‹</button>
+      <div class="cal-title-wrap">
+        <div class="cal-title" id="cal-title"></div>
+        <button class="today-link" id="today-btn">Aujourd'hui</button>
       </div>
-      <div class="cal-title" id="cal-title"></div>
-      <div class="cal-title-row">
-        <button class="today-btn" id="today-btn">Aujourd'hui</button>
-        <button id="next">›</button>
-      </div>
+      <button id="next">›</button>
     </div>
     <div class="grid" id="dow-row"></div>
     <div class="grid" id="cal-grid"></div>
@@ -233,7 +231,9 @@
         <p class="step-label"><span class="num">2</span>Vos dates de congé</p>
         <div class="cal-header">
           <button id="mini-prev">‹</button>
-          <div class="cal-title" id="mini-title"></div>
+          <div class="cal-title-wrap">
+            <div class="cal-title" id="mini-title"></div>
+          </div>
           <button id="mini-next">›</button>
         </div>
         <div class="grid" id="mini-dow-row"></div>
