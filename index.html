@@ -134,29 +134,87 @@
   .prow button:hover { color: var(--warn); }
 
   .footer-actions { display: flex; justify-content: flex-end; margin-top: 20px; }
+
+  .intro {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--blue-light); border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 20px;
+    font-size: 12px; color: #1E4FA8; line-height: 1.5;
+  }
+  .intro b { font-weight: 700; }
+
+  .step-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; color: var(--blue);
+    text-transform: uppercase; letter-spacing: 0.03em;
+    margin: 0 0 10px;
+  }
+  .step-label .num {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--blue); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; flex-shrink: 0;
+  }
+  .step-block { margin-bottom: 22px; }
+  .step-block:last-of-type { margin-bottom: 0; }
+
+  .today-btn {
+    background: #fff; border: 1px solid var(--line); border-radius: 8px;
+    padding: 5px 10px; font-size: 11px; font-weight: 600; color: var(--text-sec);
+    cursor: pointer; margin-left: 8px;
+  }
+  .today-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .cal-title-row { display: flex; align-items: center; }
+
+  .empty-hint {
+    text-align: center; padding: 30px 10px; color: var(--text-sec); font-size: 13px;
+  }
+  .empty-hint .big { font-size: 24px; display: block; margin-bottom: 8px; }
+
+  .loading { text-align: center; padding: 20px; color: var(--text-sec); font-size: 13px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: #fff; font-size: 13px; font-weight: 600;
+    padding: 10px 18px; border-radius: 10px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 50; display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  .toast.error { background: #A32D2D; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Suivi des congés - équipe Marcom</h1>
-  <p class="sub">Sélectionnez un nom pour voir ses congés, ou saisissez les vôtres dans l'autre onglet.</p>
+  <p class="sub">Un endroit unique pour voir qui est absent et déclarer vos propres congés.</p>
+
+  <div class="intro">
+    <span>💡</span>
+    <span><b>Comment ça marche :</b> dans "Voir le calendrier", cliquez sur un nom pour afficher ses jours d'absence. Dans "Ajouter mes congés", choisissez votre nom puis vos dates.</span>
+  </div>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="view">Calendrier</button>
-    <button class="tab-btn" data-tab="add">Saisir mes congés</button>
+    <button class="tab-btn active" data-tab="view">Voir le calendrier</button>
+    <button class="tab-btn" data-tab="add">Ajouter mes congés</button>
   </div>
 
   <div class="tab-content active" id="tab-view">
     <div class="filters" id="filters"></div>
 
     <div class="cal-header">
-      <button id="prev">‹</button>
+      <div class="cal-title-row">
+        <button id="prev">‹</button>
+      </div>
       <div class="cal-title" id="cal-title"></div>
-      <button id="next">›</button>
+      <div class="cal-title-row">
+        <button class="today-btn" id="today-btn">Aujourd'hui</button>
+        <button id="next">›</button>
+      </div>
     </div>
     <div class="grid" id="dow-row"></div>
     <div class="grid" id="cal-grid"></div>
-    <p class="hint" id="hint">Cliquez un nom ci-dessus pour afficher ses jours de congé.</p>
+    <p class="hint" id="hint">Cliquez sur un nom ci-dessus pour afficher ses jours de congé.</p>
     <div class="conflict-note" id="conflict-note"></div>
 
     <div class="footer-actions">
@@ -166,27 +224,33 @@
 
   <div class="tab-content" id="tab-add">
     <div class="panel">
-      <h3>Saisir une période de congé</h3>
-      <div class="field">
-        <label>Nom</label>
+      <div class="step-block">
+        <p class="step-label"><span class="num">1</span>Qui êtes-vous</p>
         <select id="person-select"></select>
       </div>
 
-      <div class="cal-header">
-        <button id="mini-prev">‹</button>
-        <div class="cal-title" id="mini-title"></div>
-        <button id="mini-next">›</button>
+      <div class="step-block">
+        <p class="step-label"><span class="num">2</span>Vos dates de congé</p>
+        <div class="cal-header">
+          <button id="mini-prev">‹</button>
+          <div class="cal-title" id="mini-title"></div>
+          <button id="mini-next">›</button>
+        </div>
+        <div class="grid" id="mini-dow-row"></div>
+        <div class="grid" id="mini-grid"></div>
+        <p class="hint" id="mini-hint">Cliquez un jour de début, puis un jour de fin.</p>
+        <button class="btn-blue" id="add-btn" disabled>Ajouter cette période</button>
       </div>
-      <div class="grid" id="mini-dow-row"></div>
-      <div class="grid" id="mini-grid"></div>
-      <p class="hint" id="mini-hint">Cliquez un jour de début puis un jour de fin.</p>
 
-      <button class="btn-blue" id="add-btn" disabled>Ajouter</button>
-
-      <div class="plist" id="plist"></div>
+      <div class="step-block">
+        <p class="step-label"><span class="num">3</span>Vos périodes déjà enregistrées</p>
+        <div class="plist" id="plist"></div>
+      </div>
     </div>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 const PEOPLE = [
@@ -224,6 +288,15 @@ const miniTitleEl = document.getElementById("mini-title");
 const personSelect = document.getElementById("person-select");
 const plistEl = document.getElementById("plist");
 const addBtn = document.getElementById("add-btn");
+const toastEl = document.getElementById("toast");
+
+let toastTimer = null;
+function showToast(message, isError) {
+  clearTimeout(toastTimer);
+  toastEl.textContent = message;
+  toastEl.className = "toast show" + (isError ? " error" : "");
+  toastTimer = setTimeout(() => { toastEl.className = "toast"; }, 2600);
+}
 
 function buildDowRow(target) {
   DOW.forEach(d => {
@@ -393,15 +466,16 @@ addBtn.onclick = async () => {
     await addLeaveRemote(formPerson, pickStart, pickEnd);
     await loadLeaves();
     pickStart = null; pickEnd = null;
-    document.getElementById("mini-hint").textContent = "Cliquez un jour de début puis un jour de fin.";
+    document.getElementById("mini-hint").textContent = "Cliquez un jour de début, puis un jour de fin.";
     renderMini();
     renderPlist();
     renderCalendar();
+    showToast("Congé ajouté");
   } catch (e) {
     console.error("Erreur d'ajout", e);
-    document.getElementById("mini-hint").textContent = "Erreur d'envoi, réessayez.";
+    showToast("Erreur d'envoi, réessayez", true);
   } finally {
-    addBtn.textContent = "Ajouter";
+    addBtn.textContent = "Ajouter cette période";
     addBtn.disabled = false;
   }
 };
@@ -410,7 +484,7 @@ function renderPlist() {
   plistEl.innerHTML = "";
   const mine = leaves.filter(l => l.person === formPerson).sort((a,b) => a.start.localeCompare(b.start));
   if (mine.length === 0) {
-    plistEl.innerHTML = '<div style="color:var(--text-sec); font-size:13px; padding-top:10px;">Aucune période enregistrée pour ' + formPerson + '.</div>';
+    plistEl.innerHTML = '<div class="empty-hint"><span class="big">🗓</span>Aucune période enregistrée pour ' + formPerson + ' pour le moment.</div>';
   } else {
     mine.forEach(l => {
       const row = document.createElement("div");
@@ -424,13 +498,16 @@ function renderPlist() {
         <button aria-label="Supprimer">✕</button>
       `;
       row.querySelector("button").onclick = async () => {
+        if (!confirm("Supprimer cette période du " + s + (s === e ? "" : " au " + e) + " ?")) return;
         try {
           await deleteLeaveRemote(l.id);
           await loadLeaves();
           renderPlist();
           renderCalendar();
+          showToast("Période supprimée");
         } catch (e) {
           console.error("Erreur de suppression", e);
+          showToast("Erreur de suppression, réessayez", true);
         }
       };
       plistEl.appendChild(row);
@@ -487,10 +564,12 @@ async function deleteLeaveRemote(id) {
 
 document.getElementById("prev").onclick = () => { mainView = new Date(mainView.getFullYear(), mainView.getMonth()-1, 1); renderCalendar(); };
 document.getElementById("next").onclick = () => { mainView = new Date(mainView.getFullYear(), mainView.getMonth()+1, 1); renderCalendar(); };
+document.getElementById("today-btn").onclick = () => { mainView = new Date(); renderCalendar(); };
 document.getElementById("mini-prev").onclick = () => { miniView = new Date(miniView.getFullYear(), miniView.getMonth()-1, 1); renderMini(); };
 document.getElementById("mini-next").onclick = () => { miniView = new Date(miniView.getFullYear(), miniView.getMonth()+1, 1); renderMini(); };
 
 (async function init() {
+  gridEl.innerHTML = '<div class="loading">Chargement du calendrier...</div>';
   await loadLeaves();
   renderFilters();
   renderCalendar();
