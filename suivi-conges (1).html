@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Suivi des congés - Marcom</title>
+<style>
+  :root {
+    --bg: #FDFDFC;
+    --card: #FFFFFF;
+    --line: #E4E3DD;
+    --text: #26251F;
+    --text-sec: #8B8A82;
+    --blue: #2F6FE0;
+    --blue-light: #EAF1FD;
+    --warn: #D97706;
+    --warn-bg: #FDF3E3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 28px 16px 60px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 21px; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .sub { color: var(--text-sec); font-size: 13px; margin: 0 0 20px; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 22px; border-bottom: 1px solid var(--line); }
+  .tab-btn {
+    background: none; border: none; cursor: pointer;
+    padding: 10px 4px; margin-right: 18px;
+    font-size: 14px; font-weight: 600; color: var(--text-sec);
+    border-bottom: 2px solid transparent;
+  }
+  .tab-btn.active { color: var(--blue); border-color: var(--blue); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 600;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    background: #fff;
+    color: var(--text);
+  }
+  .chip.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .sum-chip {
+    border: 1px solid var(--line); border-radius: 10px; padding: 7px 11px;
+    font-size: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .sum-chip b { font-size: 13px; }
+
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-header button {
+    background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    width: 32px; height: 32px; cursor: pointer; font-size: 15px; color: var(--blue);
+  }
+  .cal-header button:hover { border-color: var(--blue); }
+  .cal-title { font-weight: 700; font-size: 15px; }
+
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .dow { text-align: center; font-size: 11px; color: var(--text-sec); padding-bottom: 6px; font-weight: 600; }
+  .day {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: default;
+    border: 1px solid var(--line);
+    background: #fff;
+    user-select: none;
+    position: relative;
+  }
+  .day.empty { visibility: hidden; }
+  .day.today { font-weight: 700; box-shadow: inset 0 0 0 1px var(--text-sec); }
+  .day.mine { color: #fff; font-weight: 600; border-color: transparent; }
+  .day.conflict:not(.mine) { border-color: var(--warn); }
+  .day.pickable { cursor: pointer; }
+  .day.pickable:hover { border-color: var(--blue); }
+  .day.pick-range { background: var(--blue-light); border-color: var(--blue); }
+  .day.pick-edge { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  .hint { font-size: 12px; color: var(--text-sec); margin: 12px 0 0; text-align: center; }
+  .conflict-note {
+    font-size: 12px; color: var(--warn); background: var(--warn-bg);
+    border-radius: 8px; padding: 8px 12px; margin-top: 14px; display: none;
+  }
+
+  .panel {
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+    margin-top: 18px; background: #fff;
+  }
+  .panel h3 { margin: 0 0 12px; font-size: 14px; font-weight: 700; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .field label { font-size: 11px; color: var(--text-sec); font-weight: 600; }
+  select {
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px;
+    background: #fff; color: var(--text);
+  }
+  .btn-blue {
+    background: var(--blue); color: #fff; border: none; border-radius: 8px;
+    padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+    margin-top: 14px;
+  }
+  .btn-blue:disabled { background: #C9C8C0; cursor: not-allowed; }
+  .btn-blue:not(:disabled):hover { background: #2359BE; }
+  .btn-ghost {
+    background: #fff; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 14px; font-size: 13px; cursor: pointer; color: var(--text-sec);
+  }
+
+  .plist { margin-top: 16px; }
+  .prow {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-top: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .prow .range { flex: 1; }
+  .prow .days { color: var(--text-sec); font-size: 12px; }
+  .prow button {
+    background: none; border: none; color: #C9C8C0; cursor: pointer; font-size: 15px;
+  }
+  .prow button:hover { color: var(--warn); }
+
+  .footer-actions { display: flex; justify-content: flex-end; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Suivi des congés - équipe Marcom</h1>
+  <p class="sub">Sélectionnez un nom pour voir ses congés, ou saisissez les vôtres dans l'autre onglet.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="view">Calendrier</button>
+    <button class="tab-btn" data-tab="add">Saisir mes congés</button>
+  </div>
+
+  <div class="tab-content active" id="tab-view">
+    <div class="filters" id="filters"></div>
+
+    <div class="cal-header">
+      <button id="prev">‹</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button id="next">›</button>
+    </div>
+    <div class="grid" id="dow-row"></div>
+    <div class="grid" id="cal-grid"></div>
+    <p class="hint" id="hint">Cliquez un nom ci-dessus pour afficher ses jours de congé.</p>
+    <div class="conflict-note" id="conflict-note"></div>
+
+    <div class="footer-actions">
+      <button class="btn-ghost" id="export-btn">Exporter en CSV</button>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-add">
+    <div class="panel">
+      <h3>Saisir une période de congé</h3>
+      <div class="field">
+        <label>Nom</label>
+        <select id="person-select"></select>
+      </div>
+
+      <div class="cal-header">
+        <button id="mini-prev">‹</button>
+        <div class="cal-title" id="mini-title"></div>
+        <button id="mini-next">›</button>
+      </div>
+      <div class="grid" id="mini-dow-row"></div>
+      <div class="grid" id="mini-grid"></div>
+      <p class="hint" id="mini-hint">Cliquez un jour de début puis un jour de fin.</p>
+
+      <button class="btn-blue" id="add-btn" disabled>Ajouter</button>
+
+      <div class="plist" id="plist"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PEOPLE = [
+  { name: "Ryad", color: "#2F6FE0" },
+  { name: "Zineb", color: "#D4537E" },
+  { name: "Imane", color: "#1D9E75" },
+  { name: "Abdelali", color: "#EF9F27" },
+  { name: "Jamal", color: "#7F77DD" },
+  { name: "Mehdi", color: "#D85A30" }
+];
+const DOW = ["Lu","Ma","Me","Je","Ve","Sa","Di"];
+const CONFLICT_THRESHOLD = 3;
+const MONTH_NAMES = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5BhbIRSJEHADoQDenlf--2a9hI5oD1MO0R5__pK9iDdj9mBdHkBWfmrTnD8g8GUwt/exec";
+
+let mainView = new Date(2026, 7, 1);
+let miniView = new Date(2026, 7, 1);
+let leaves = [];
+let selectedPerson = null;
+let formPerson = PEOPLE[0].name;
+let pickStart = null;
+let pickEnd = null;
+
+const gridEl = document.getElementById("cal-grid");
+const dowRow = document.getElementById("dow-row");
+const titleEl = document.getElementById("cal-title");
+const filtersEl = document.getElementById("filters");
+const conflictNoteEl = document.getElementById("conflict-note");
+const hintEl = document.getElementById("hint");
+
+const miniGridEl = document.getElementById("mini-grid");
+const miniDowRow = document.getElementById("mini-dow-row");
+const miniTitleEl = document.getElementById("mini-title");
+const personSelect = document.getElementById("person-select");
+const plistEl = document.getElementById("plist");
+const addBtn = document.getElementById("add-btn");
+
+function buildDowRow(target) {
+  DOW.forEach(d => {
+    const el = document.createElement("div");
+    el.className = "dow";
+    el.textContent = d;
+    target.appendChild(el);
+  });
+}
+buildDowRow(dowRow);
+buildDowRow(miniDowRow);
+
+personSelect.innerHTML = "";
+PEOPLE.forEach(p => {
+  const o = document.createElement("option");
+  o.value = p.name; o.textContent = p.name;
+  personSelect.appendChild(o);
+});
+personSelect.onchange = () => { formPerson = personSelect.value; renderMini(); renderPlist(); };
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  };
+});
+
+function personByName(n) { return PEOPLE.find(p => p.name === n); }
+function fmt(d) { return d.toISOString().slice(0,10); }
+function parseDate(s) { const [y,m,dd] = s.split("-").map(Number); return new Date(y, m-1, dd); }
+function daysBetween(a, b) { return Math.round((parseDate(b) - parseDate(a)) / 86400000) + 1; }
+
+function renderFilters() {
+  filtersEl.innerHTML = "";
+  PEOPLE.forEach(p => {
+    const chip = document.createElement("div");
+    chip.className = "chip" + (selectedPerson === p.name ? " active" : "");
+    chip.innerHTML = `<span class="dot" style="background:${p.color}"></span>${p.name}`;
+    chip.onclick = () => {
+      selectedPerson = selectedPerson === p.name ? null : p.name;
+      hintEl.textContent = selectedPerson
+        ? "Jours de congé de " + selectedPerson + "."
+        : "Cliquez un nom ci-dessus pour afficher ses jours de congé.";
+      renderFilters();
+      renderCalendar();
+    };
+    filtersEl.appendChild(chip);
+  });
+}
+
+function renderCalendar() {
+  const y = mainView.getFullYear(), m = mainView.getMonth();
+  titleEl.textContent = MONTH_NAMES[m] + " " + y;
+  gridEl.innerHTML = "";
+
+  const first = new Date(y, m, 1);
+  let startOffset = first.getDay() - 1;
+  if (startOffset < 0) startOffset = 6;
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const today = fmt(new Date());
+  let conflictDays = 0;
+
+  for (let i = 0; i < startOffset; i++) {
+    const el = document.createElement("div");
+    el.className = "day empty";
+    gridEl.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(y, m, d);
+    const dateStr = fmt(dateObj);
+    const el = document.createElement("div");
+    el.className = "day";
+    if (dateStr === today) el.classList.add("today");
+
+    const peopleToday = leaves.filter(l => dateStr >= l.start && dateStr <= l.end);
+    if (peopleToday.length >= CONFLICT_THRESHOLD) {
+      el.classList.add("conflict");
+      conflictDays++;
+    }
+
+    if (selectedPerson && peopleToday.some(l => l.person === selectedPerson)) {
+      el.classList.add("mine");
+      el.style.background = personByName(selectedPerson).color;
+    }
+
+    el.textContent = d;
+    gridEl.appendChild(el);
+  }
+
+  if (conflictDays > 0) {
+    conflictNoteEl.style.display = "block";
+    conflictNoteEl.textContent = conflictDays + " jour(s) ce mois-ci avec " + CONFLICT_THRESHOLD + " personnes ou plus absentes en même temps, pensez aux backups.";
+  } else {
+    conflictNoteEl.style.display = "none";
+  }
+}
+
+function renderMini() {
+  const y = miniView.getFullYear(), m = miniView.getMonth();
+  miniTitleEl.textContent = MONTH_NAMES[m] + " " + y;
+  miniGridEl.innerHTML = "";
+
+  const first = new Date(y, m, 1);
+  let startOffset = first.getDay() - 1;
+  if (startOffset < 0) startOffset = 6;
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+
+  for (let i = 0; i < startOffset; i++) {
+    const el = document.createElement("div");
+    el.className = "day empty";
+    miniGridEl.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = fmt(new Date(y, m, d));
+    const el = document.createElement("div");
+    el.className = "day pickable";
+    el.textContent = d;
+
+    if (pickStart && !pickEnd && dateStr === pickStart) el.classList.add("pick-edge");
+    if (pickStart && pickEnd) {
+      if (dateStr === pickStart || dateStr === pickEnd) el.classList.add("pick-edge");
+      else if (dateStr > pickStart && dateStr < pickEnd) el.classList.add("pick-range");
+    }
+
+    el.onclick = () => handleMiniClick(dateStr);
+    miniGridEl.appendChild(el);
+  }
+}
+
+function handleMiniClick(dateStr) {
+  if (!pickStart || (pickStart && pickEnd)) {
+    pickStart = dateStr;
+    pickEnd = null;
+  } else {
+    if (dateStr < pickStart) {
+      pickEnd = pickStart;
+      pickStart = dateStr;
+    } else {
+      pickEnd = dateStr;
+    }
+  }
+  addBtn.disabled = !(pickStart && pickEnd);
+  document.getElementById("mini-hint").textContent = pickStart && pickEnd
+    ? "Période sélectionnée, cliquez Ajouter."
+    : (pickStart ? "Cliquez le jour de fin." : "Cliquez un jour de début puis un jour de fin.");
+  renderMini();
+}
+
+addBtn.onclick = async () => {
+  if (!pickStart || !pickEnd) return;
+  addBtn.disabled = true;
+  addBtn.textContent = "Ajout en cours...";
+  await addLeaveRemote(formPerson, pickStart, pickEnd);
+  await loadLeaves();
+  pickStart = null; pickEnd = null;
+  addBtn.textContent = "Ajouter";
+  document.getElementById("mini-hint").textContent = "Cliquez un jour de début puis un jour de fin.";
+  renderMini();
+  renderPlist();
+  renderCalendar();
+};
+
+function renderPlist() {
+  plistEl.innerHTML = "";
+  const mine = leaves.filter(l => l.person === formPerson).sort((a,b) => a.start.localeCompare(b.start));
+  if (mine.length === 0) {
+    plistEl.innerHTML = '<div style="color:var(--text-sec); font-size:13px; padding-top:10px;">Aucune période enregistrée pour ' + formPerson + '.</div>';
+  } else {
+    mine.forEach(l => {
+      const row = document.createElement("div");
+      row.className = "prow";
+      const opts = { day: "numeric", month: "short" };
+      const s = parseDate(l.start).toLocaleDateString("fr-FR", opts);
+      const e = parseDate(l.end).toLocaleDateString("fr-FR", opts);
+      row.innerHTML = `
+        <span class="range">${s === e ? s : s + " → " + e}</span>
+        <span class="days">${daysBetween(l.start, l.end)}j</span>
+        <button aria-label="Supprimer">✕</button>
+      `;
+      row.querySelector("button").onclick = async () => {
+        await deleteLeaveRemote(l.id);
+        await loadLeaves();
+        renderPlist();
+        renderCalendar();
+      };
+      plistEl.appendChild(row);
+    });
+  }
+}
+
+document.getElementById("export-btn").onclick = () => {
+  const rows = [["Personne", "Debut", "Fin", "Jours"]];
+  [...leaves].sort((a,b) => a.start.localeCompare(b.start)).forEach(l => {
+    rows.push([l.person, l.start, l.end, daysBetween(l.start, l.end)]);
+  });
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "conges-marcom.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+async function loadLeaves() {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL);
+    leaves = await res.json();
+  } catch (e) {
+    console.error("Erreur de chargement", e);
+    leaves = [];
+  }
+}
+async function addLeaveRemote(person, start, end) {
+  await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "add", person, start, end })
+  });
+}
+async function deleteLeaveRemote(id) {
+  await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "delete", id })
+  });
+}
+
+document.getElementById("prev").onclick = () => { mainView = new Date(mainView.getFullYear(), mainView.getMonth()-1, 1); renderCalendar(); };
+document.getElementById("next").onclick = () => { mainView = new Date(mainView.getFullYear(), mainView.getMonth()+1, 1); renderCalendar(); };
+document.getElementById("mini-prev").onclick = () => { miniView = new Date(miniView.getFullYear(), miniView.getMonth()-1, 1); renderMini(); };
+document.getElementById("mini-next").onclick = () => { miniView = new Date(miniView.getFullYear(), miniView.getMonth()+1, 1); renderMini(); };
+
+(async function init() {
+  await loadLeaves();
+  renderFilters();
+  renderCalendar();
+  renderMini();
+  renderPlist();
+})();
+</script>
+</body>
+</html>
