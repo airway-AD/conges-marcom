@@ -255,7 +255,11 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 
 function personByName(n) { return PEOPLE.find(p => p.name === n); }
 function fmt(d) { return d.toISOString().slice(0,10); }
-function parseDate(s) { const [y,m,dd] = s.split("-").map(Number); return new Date(y, m-1, dd); }
+function parseDate(s) {
+  const clean = String(s).slice(0, 10);
+  const [y,m,dd] = clean.split("-").map(Number);
+  return new Date(y, m-1, dd);
+}
 function daysBetween(a, b) { return Math.round((parseDate(b) - parseDate(a)) / 86400000) + 1; }
 
 function renderFilters() {
@@ -447,7 +451,15 @@ document.getElementById("export-btn").onclick = () => {
 async function loadLeaves() {
   try {
     const res = await fetch(APPS_SCRIPT_URL);
-    leaves = await res.json();
+    const raw = await res.json();
+    leaves = (Array.isArray(raw) ? raw : [])
+      .filter(l => l && l.person && l.start && l.end)
+      .map(l => ({
+        id: l.id,
+        person: l.person,
+        start: String(l.start).slice(0, 10),
+        end: String(l.end).slice(0, 10)
+      }));
   } catch (e) {
     console.error("Erreur de chargement", e);
     leaves = [];
